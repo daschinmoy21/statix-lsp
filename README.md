@@ -17,7 +17,8 @@ Instead of shelling out to the `statix` CLI, this server links directly against 
   ```sh
   git clone https://github.com/molybdenumsoftware/statix.git 
   ```
-- VS Code for testing Neovim soon :)  
+- VS Code for testing.
+ Neovim soon :)  
 
 ## Setup
 
