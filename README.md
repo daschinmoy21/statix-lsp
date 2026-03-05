@@ -1,6 +1,6 @@
 # statix-lsp
 
-A native LSP server for [Statix](https://github.com/nerdypepper/statix) — a linter for the Nix programming language. Built with [tower-lsp](https://github.com/ebkalderon/tower-lsp).
+A native LSP server for [Statix] — a linter for the Nix programming language. Built with [tower-lsp](https://github.com/ebkalderon/tower-lsp).
 
 Instead of shelling out to the `statix` CLI, this server links directly against the statix lint library and runs lints in-process, giving you instant diagnostics and quick fixes.
 
@@ -13,11 +13,11 @@ Instead of shelling out to the `statix` CLI, this server links directly against 
 ## Prerequisites
 
 - [Nix](https://nixos.org/) with flakes enabled
-- The [statix](https://github.com/nerdypepper/statix) repo cloned locally inside this project:
+- The [statix] repo cloned locally inside this project:
   ```sh
-  git clone https://github.com/nerdypepper/statix.git
+  git clone https://github.com/molybdenumsoftware/statix.git 
   ```
-- VS Code with the [Nix IDE](https://marketplace.visualstudio.com/items?itemName=jnoortheen.nix-ide) extension (for `.nix` language detection)
+- VS Code for testing Neovim soon :)  
 
 ## Setup
 
