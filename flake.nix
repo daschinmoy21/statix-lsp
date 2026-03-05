@@ -24,6 +24,7 @@
             rust-analyzer
             pkg-config
             openssl
+            nodejs
           ];
           
           shellHook = ''

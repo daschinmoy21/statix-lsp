@@ -5,9 +5,9 @@ edition = "2024"
 
 [dependencies]
 dashmap = "6.1.0"
-rnix = "0.14.0"
-serde = "1.0.228"
-serde_json = "1.0.149"
-statix = "4.8.3"
-tokio = "1.50.0"
+rnix = "*"
+serde = "1.0"
+serde_json = "1.0"
+statix = { package = "lib", path = "statix/lib" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std"] }
 tower-lsp = "0.20.0"

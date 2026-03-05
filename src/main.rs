@@ -1,6 +1,5 @@
 use dashmap::DashMap;
-use rnix::WalkEvent;
-use statix::session::{SessionInfo, Version};
+use rnix::{Root, WalkEvent};
 use statix::{LINTS, Lint};
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -20,7 +19,6 @@ struct Backend {
     // Stored document text + version so we can publish versioned diagnostics.
     documents: DashMap<Url, DocumentState>,
     lint_map: OnceLock<HashMap<rnix::SyntaxKind, Vec<&'static Box<dyn Lint>>>>,
-    nix_version: Option<Version>,
 }
 
 #[derive(Debug, Clone)]
@@ -86,6 +84,11 @@ impl LanguageServer for Backend {
         }
     }
 
+    async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        //removes documents from the Dashmap on close 
+        self.documents.remove(&params.text_document.uri);
+    }
+
     async fn code_action(
         &self,
         params: CodeActionParams,
@@ -140,14 +143,6 @@ impl Backend {
         })
     }
 
-    fn session_info(&self) -> SessionInfo {
-        let version = self
-            .nix_version
-            .clone()
-            .unwrap_or_else(|| "2.4".parse::<Version>().expect("hardcoded valid version"));
-        SessionInfo::from_version(version)
-    }
-
     async fn lint(&self, uri: Url, doc: DocumentState) {
         // Keep lint path observable for debugging latency in editor output.
         self.client
@@ -158,7 +153,7 @@ impl Backend {
         let text = doc.text;
 
         //  Parse the text directly into an AST using the rnix library
-        let parsed = rnix::parse(&text);
+        let parsed = Root::parse(&text);
 
         //  Add parser syntax errors first.
         for err in parsed.errors() {
@@ -178,22 +173,13 @@ impl Backend {
             }
         }
 
-        if !diagnostics.is_empty() {
-            self.client
-                .publish_diagnostics(uri, diagnostics, Some(doc.version))
-                .await;
-            return;
-        }
-
-        // SessionInfo controls version-dependent Statix rules.
-        let sess = self.session_info();
-
-        //  Walk the AST and apply statix lints.
-        for event in parsed.node().preorder_with_tokens() {
+        // Walk the AST and apply statix lints even if there are parse errors,
+        // since partial ASTs can still contain valid, lintable subtrees.
+        for event in parsed.syntax().preorder_with_tokens() {
             if let WalkEvent::Enter(child) = event {
                 if let Some(rules) = self.lint_map().get(&child.kind()) {
                     for rule in rules {
-                        if let Some(report) = rule.validate(&child, &sess) {
+                        if let Some(report) = rule.validate(&child) {
                             for diag in report.diagnostics {
                                 let suggestion_data = diag.suggestion.map(|s| {
                                     serde_json::to_value(NativeSuggestion {
@@ -214,7 +200,9 @@ impl Backend {
                                         usize::from(diag.at.end()),
                                     ),
                                     severity: Some(DiagnosticSeverity::WARNING),
-                                    code: Some(NumberOrString::Number(report.code as i32)),
+                                    code: i32::try_from(report.code)
+                                        .ok()
+                                        .map(NumberOrString::Number),
                                     source: Some("statix-lint".to_string()),
                                     message: self.beautify_message(&format!(
                                         "{}: {}",
@@ -295,16 +283,8 @@ impl Backend {
     }
 }
 
-fn parse_nix_version_from_env() -> Option<Version> {
-    // Parse defensively: invalid env should not crash server startup.
-    std::env::var("STATIX_NIX_VERSION")
-        .ok()
-        .and_then(|v| v.parse::<Version>().ok())
-}
-
 #[tokio::main]
 async fn main() {
-    // LSP over stdio keeps the server transport-compatible with most editors.
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
@@ -313,7 +293,6 @@ async fn main() {
         documents: DashMap::new(),
         // Lazy init avoids paying rule indexing cost at startup.
         lint_map: OnceLock::new(),
-        nix_version: parse_nix_version_from_env(),
     })
     .finish();
 

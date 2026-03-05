@@ -1,0 +1,43 @@
+{
+  "name": "statix-lsp",
+  "displayName": "Statix LSP",
+  "description": "Native Statix linter for Nix files",
+  "version": "0.1.0",
+  "publisher": "crimxnhaze",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:nix"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "nix",
+        "extensions": [".nix"],
+        "aliases": ["Nix"]
+      }
+    ],
+    "configuration": {
+      "title": "Statix LSP",
+      "properties": {
+        "statix-lsp.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the statix-lsp binary. Leave empty to use the bundled binary."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0"
+  }
+}
